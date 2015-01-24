@@ -13,7 +13,7 @@ In this project, the goal is to accurately predict the manner in which individua
 - Random Forests  without Pre-processing (**PM3**)
 - Random Forests with Pre-processing (**PM4**)
 
-We find that **PM4** gives the highest prediction accuracy among the other three using the training dataset. The same model is used to predict the ``classe`` values in the test set. 
+We find that **PM3** and **PM4** give high prediction accuracy values compared to the other two. Finally, we use both **PM3** and **PM4** to predict the ``classe`` values in the test set. Both methods result to the same prediction.
 
 [1]: http://groupware.les.inf.puc-rio.br/har "Groupware"
 
@@ -23,8 +23,6 @@ We find that **PM4** gives the highest prediction accuracy among the other three
 - Find `NA` values.
 - Drop columns that are not complete.
 - Drop columns that are not predictor variables.
-
-Replace all `NA` values with `""`.
 
 ```{r}
 dat_training <- read.csv("pml-training.csv", header=TRUE, na.strings=c("NA",""))
@@ -37,34 +35,38 @@ dat_training_trimmed <- dat_training[, (colSums(is.na(dat_training)) == 0)]
 dat_test_trimmed <- dat_test[, (colSums(is.na(dat_training)) == 0)]
 ```
 
-From here, we drop the first seven (7) columns `r names(dat_training_trimmed)[1:7]` since they are not really predictors.
-```{r, warning=FALSE, message=FALSE}
+From here, we drop the first seven (7) columns `r names(dat_training_trimmed)[1:7]` since they are not feature variables.
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 library(dplyr)
+library(caret)
+```
+
+```{r, warning=FALSE, message=FALSE}
 dat_training_trimmed <- select(dat_training_trimmed, roll_belt:classe)[,]
 dat_test_trimmed <- select(dat_test_trimmed, roll_belt:problem_id)[,]
-#str(dat_training_trimmed)
-#str(dat_test_trimmed)
 ```
 
 ###Training Set
 
-Note that there are a total of `r nrow(dat_training_trimmed)` cases for the training set. Since the number of cases for the training set huge, we can create subsets of these from which we can run and validate our predictive models. We shall create two subsets: `train1` and `train2`. 
+Note that there are a total of `r nrow(dat_training_trimmed)` cases for the training set. Since the number of cases for the training set is huge, we can create subsets of these from which we can run and validate our predictive models. We create two subsets: `train1` and `train2`. 
 
 ```{r warning=FALSE, message=FALSE}
-library(caret)
 set.seed(222)
 ids_train = createDataPartition(y=dat_training_trimmed$classe, p=0.50, list = FALSE)
 subtrain1 = dat_training_trimmed[ids_train,]
 subtrain2 = dat_training_trimmed[-ids_train,]
 ```
 
-We further subdivide datasets `train1` (`r nrow(subtrain1)` entries) and `train2` (`r nrow(subtrain2)` entries) into *training* (80%) and *test* (20%) sets for training and validation, respectively.
+We further subdivide datasets `train1` (`r nrow(subtrain1)` entries) and `train2` (`r nrow(subtrain2)` entries) into *training* (80%) and *validation* (20%) sets for training and validation, respectively.
 
-```{r}
+```{r warning=FALSE, message=FALSE}
+set.seed(222)
 ids_train1 = createDataPartition(y = subtrain1$classe, p=0.80, list=FALSE)
 subtrain1_training = subtrain1[ids_train1,]
 subtrain1_validation = subtrain1[-ids_train1,]
 
+set.seed(222)
 ids_train2 = createDataPartition(y = subtrain2$classe, p=0.80, list=FALSE)
 subtrain2_training = subtrain2[ids_train2,]
 subtrain2_validation = subtrain2[-ids_train2,]
@@ -79,92 +81,118 @@ Four predictive models are performed in this project.
 - Random Forests  without Pre-processing (**PM3**)
 - Random Forests with Pre-processing (**PM4**)
 
-For **PM1** and **PM2**, we use a *recursive partitioning* model (method: `rpart`), while for **PM3** and **PM4**, we use *random forests*. Finally for **PM2** and **PM4**, we utilize "center" and "scale" in the preprocessing of the datasets.
+For **PM1** and **PM2**, we use a *recursive partitioning* model (method: `rpart`), while for **PM3** and **PM4**, we use *random forests*. Finally for **PM2** and **PM4**, we preprocess the sets ("center" and "scale").
 
 
-```{r warning=FALSE, message=FALSE, echo=FALSE}
-####Classification Tree without Pre-processing
+```{r warning=FALSE, message=FALSE, echo=FALSE, cache=TRUE}
+####Recursive Partitioning without Pre-processing
 set.seed(222)
-modFit <- train(subtrain1_training$classe ~ ., data = subtrain1_training, method="rpart")
-predictions1 <- predict(modFit, newdata = subtrain1_validation)
+PM1 <- train(subtrain1_training$classe ~ ., data = subtrain1_training, method="rpart", 
+                trControl=trainControl(method = "cv", number = 5))
+predictions1 <- predict(PM1, newdata = subtrain1_validation)
 cmatrix1 <- confusionMatrix(predictions1, subtrain1_validation$classe)
 ct_accuracy1 <- cmatrix1$overall[1]
 
 set.seed(222)
-modFit <- train(subtrain2_training$classe ~ ., data = subtrain2_training, method="rpart")
-predictions2 <- predict(modFit, newdata = subtrain2_validation)
+PM1 <- train(subtrain2_training$classe ~ ., data = subtrain2_training, method="rpart", 
+                trControl=trainControl(method = "cv", number = 5))
+predictions2 <- predict(PM1, newdata = subtrain2_validation)
 cmatrix2 <- confusionMatrix(predictions2, subtrain2_validation$classe)
 ct_accuracy2 <- cmatrix2$overall[1]
-```
 
-```{r warning=FALSE, message=FALSE, echo=FALSE}
-####Classification Tree with Pre-processing
+####Recursive Partitioning with Pre-processing
 set.seed(222)
-modFit <- train(subtrain1_training$classe ~ ., data = subtrain1_training, 
-                preProcess=c("center", "scale"), method="rpart")
-predictions1 <- predict(modFit, newdata = subtrain1_validation)
+PM2 <- train(subtrain1_training$classe ~ ., data = subtrain1_training, 
+             preProcess=c("center", "scale"), method="rpart",
+             trControl=trainControl(method = "cv", number = 5))
+predictions1 <- predict(PM2, newdata = subtrain1_validation)
 cmatrix1 <- confusionMatrix(predictions1, subtrain1_validation$classe)
 ct_accuracy3 <- cmatrix1$overall[1]
 
 set.seed(222)
-modFit <- train(subtrain2_training$classe ~ ., data = subtrain2_training, 
-                preProcess=c("center", "scale"), method="rpart")
-predictions2 <- predict(modFit, newdata = subtrain2_validation)
+PM2 <- train(subtrain2_training$classe ~ ., data = subtrain2_training, 
+             preProcess=c("center", "scale"), method="rpart",
+             trControl=trainControl(method = "cv", number = 5))
+predictions2 <- predict(PM2, newdata = subtrain2_validation)
 cmatrix2 <- confusionMatrix(predictions2, subtrain2_validation$classe)
 ct_accuracy4 <- cmatrix2$overall[1]
-```
 
-```{r}
-####Random Forest Approach without Pre-Processing
+####Random Forests w/
 set.seed(222)
-modFit <- train(subtrain1_training$classe ~ ., method="rf", 
-                data=subtrain1_training)
-print(modFit, digits=3)
-predictions1 <- predict(modFit, newdata = subtrain1_validation)
+PM31 <- train(subtrain1_training$classe ~ ., method="rf", data=subtrain1_training,
+             trControl=trainControl(method = "cv", number = 5))
+predictions1 <- predict(PM31, newdata = subtrain1_validation)
 cmatrix1 <- confusionMatrix(predictions1, subtrain1_validation$classe)
 rf_accuracy1 <- cmatrix1$overall[1]
 
-modFit <- train(subtrain2_training$classe ~ ., method="rf",  
-                data=subtrain2_training)
-print(modFit, digits=3)
-predictions2 <- predict(modFit, newdata = subtrain2_validation)
+set.seed(222)
+PM32 <- train(subtrain2_training$classe ~ ., method="rf",  
+                data=subtrain2_training, trControl=trainControl(method = "cv", number = 5))
+predictions2 <- predict(PM32, newdata = subtrain2_validation)
 cmatrix2 <- confusionMatrix(predictions2, subtrain2_validation$classe)
 rf_accuracy2 <- cmatrix2$overall[1]
-```
 
-```{r}
-####Random Forest Approach with Pre-Processing
+####Random Forests w/o
 set.seed(222)
-modFit <- train(subtrain1_training$classe ~ ., method="rf", preProcess=c("center", "scale"), 
-                data=subtrain1_training)
-print(modFit, digits=3)
-predictions1 <- predict(modFit, newdata = subtrain1_validation)
+PM41 <- train(subtrain1_training$classe ~ ., method="rf", 
+              preProcess=c("center", "scale"), 
+              data=subtrain1_training, 
+              trControl=trainControl(method = "cv", number = 5))
+predictions1 <- predict(PM41, newdata = subtrain1_validation)
 cmatrix1 <- confusionMatrix(predictions1, subtrain1_validation$classe)
 rf_accuracy3 <- cmatrix1$overall[1]
 
-modFit <- train(subtrain2_training$classe ~ ., method="rf", preProcess=c("center", "scale"), 
-                data=subtrain2_training)
-print(modFit, digits=3)
-predictions2 <- predict(modFit, newdata = subtrain2_validation)
+PM42 <- train(subtrain2_training$classe ~ ., method="rf", 
+              preProcess=c("center", "scale"), 
+              data=subtrain2_training, 
+              trControl=trainControl(method = "cv", number = 5))
+predictions2 <- predict(PM42, newdata = subtrain2_validation)
 cmatrix2 <- confusionMatrix(predictions2, subtrain2_validation$classe)
 rf_accuracy4 <- cmatrix2$overall[1]
 ```
 
 ####Model Accuracies
+
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
-dat <- data.frame( "PM1"<-c(ct_accuracy1, ct_accuracy2), 
-                   "PM2"<-c(ct_accuracy3, rf_accuracy4),
-                   "PM3"<-c(rf_accuracy1, rf_accuracy2),
-                   "PM4"<-c(rf_accuracy3, rf_accuracy4))
-rownames(dat) <- c("Subset 1", "Subset 2")
-print(dat)
+error1 <- 1 - rf_accuracy3
+error2 <- 1 - rf_accuracy4
+m <- mean(c(error1, error2))
 ```
 
-We note that **PM4** gives the highest accuracies for both subsets: `r rf_accuracy3` and `r rf_accuracy4`, with out-of-sample errors `r 1-rf_accuracy3` and `r 1-rf_accuracy4`, respectively, or an average of `r mean(c(1-rf_accuracy3,1-rf_accuracy4))`. 
+We note that **PM4** gives the highest accuracies for both subsets: `r rf_accuracy3` and `r rf_accuracy4`, with out-of-sample errors `r error1` and `r error2`, respectively, or an average of `r m`. 
 
-Therefore, for the test dataset given provided herewith, we utilize **PM4** to predict the `classe` of each of the entry. 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+library(xtable)
+dat <- data.frame( "PM1"=c(ct_accuracy1, ct_accuracy2), 
+                   "PM2"=c(ct_accuracy3, rf_accuracy4),
+                   "PM3"=c(rf_accuracy1, rf_accuracy2),
+                   "PM4"=c(rf_accuracy3, rf_accuracy4))
+rownames(dat) <- c("Subset 1", "Subset 2")
+print(xtable(dat, digits=3, caption ="Summary of Accuracies"), type="html")
+```
 
-```{r}
-predictionsfinal <- predict(modFit, newdata = dat_test_trimmed)
+
+Therefore, for the test dataset provided herewith, we utilize random forests to predict the `classe` for each of the entry. 
+
+
+```{r warning=FALSE, message=FALSE}
+predictionsfinal <- predict(PM41, newdata = dat_test_trimmed)
 print (predictionsfinal)
+predictionsfinal <- predict(PM42, newdata = dat_test_trimmed)
+print (predictionsfinal)
+predictionsfinal <- predict(PM31, newdata = dat_test_trimmed)
+print (predictionsfinal)
+predictionsfinal <- predict(PM32, newdata = dat_test_trimmed)
+print (predictionsfinal)
+```
+
+For completeness, here are the predictions for the recursive partitioning methods.
+
+```{r warning=FALSE, message=FALSE}
+predictions <- predict(PM1, newdata = dat_test_trimmed)
+print (predictions)
+
+predictions <- predict(PM2, newdata = dat_test_trimmed)
+print (predictions)
 ```
