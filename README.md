@@ -2,7 +2,7 @@
 
 The `Assignment.html` generated via the `Assignment.Rmd` file is also published on [RPubs][1].
 
-[1]: http://rpubs.com/PilotGtec22/55512 "RPubs"
+[1]: http://rpubs.com/PilotGtec22/56329 "RPubs"
 
 If you wish to view the `Assignment.html` in this repository as a webpage, you may use [http://htmlpreview.github.io/][2] and append the URL of `Assignment.html`. That is,
 
