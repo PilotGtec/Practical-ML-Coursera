@@ -83,8 +83,10 @@ Four predictive models are performed in this project.
 
 For **PM1** and **PM2**, we use a *recursive partitioning* model (method: `rpart`), while for **PM3** and **PM4**, we use *random forests*. Finally for **PM2** and **PM4**, we preprocess the sets ("center" and "scale").
 
+For illustration, here's a sample chunk of code for one predictive model. For **PM3** and **PM4**, 
+`method="rf"`.
 
-```{r warning=FALSE, message=FALSE, echo=FALSE, cache=TRUE}
+```{r warning=FALSE, message=FALSE}
 ####Recursive Partitioning without Pre-processing
 set.seed(222)
 PM1 <- train(subtrain1_training$classe ~ ., data = subtrain1_training, method="rpart", 
@@ -92,6 +94,10 @@ PM1 <- train(subtrain1_training$classe ~ ., data = subtrain1_training, method="r
 predictions1 <- predict(PM1, newdata = subtrain1_validation)
 cmatrix1 <- confusionMatrix(predictions1, subtrain1_validation$classe)
 ct_accuracy1 <- cmatrix1$overall[1]
+```
+
+
+```{r warning=FALSE, message=FALSE, echo=FALSE, cache=TRUE}
 
 set.seed(222)
 PM1 <- train(subtrain2_training$classe ~ ., data = subtrain2_training, method="rpart", 

@@ -113,11 +113,19 @@ subtrain2_validation = subtrain2[-ids_train2,]</code></pre>
 <li>Random Forests with Pre-processing (<strong>PM4</strong>)</li>
 </ul>
 <p>For <strong>PM1</strong> and <strong>PM2</strong>, we use a <em>recursive partitioning</em> model (method: <code>rpart</code>), while for <strong>PM3</strong> and <strong>PM4</strong>, we use <em>random forests</em>. Finally for <strong>PM2</strong> and <strong>PM4</strong>, we preprocess the sets (“center” and “scale”).</p>
+<p>For illustration, here’s a sample chunk of code for one predictive model. For <strong>PM3</strong> and <strong>PM4</strong>, <code>method=&quot;rf&quot;</code>.</p>
+<pre class="r"><code>####Recursive Partitioning without Pre-processing
+set.seed(222)
+PM1 &lt;- train(subtrain1_training$classe ~ ., data = subtrain1_training, method=&quot;rpart&quot;, 
+                trControl=trainControl(method = &quot;cv&quot;, number = 5))
+predictions1 &lt;- predict(PM1, newdata = subtrain1_validation)
+cmatrix1 &lt;- confusionMatrix(predictions1, subtrain1_validation$classe)
+ct_accuracy1 &lt;- cmatrix1$overall[1]</code></pre>
 <div id="model-accuracies" class="section level4">
 <h4>Model Accuracies</h4>
 <p>We note that <strong>PM4</strong> gives the highest accuracies for both subsets: 0.9852 and 0.9842, with out-of-sample errors 0.0148 and 0.0158, respectively, or an average of 0.0153.</p>
 <!-- html table generated in R 3.1.1 by xtable 1.7-4 package -->
-<!-- Sat Jan 24 18:12:00 2015 -->
+<!-- Sun Jan 25 21:51:12 2015 -->
 <table border="1">
 <caption align="bottom"> 
 Summary of Accuracies
